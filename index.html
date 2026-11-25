@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#102033">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tank Calculator">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="description" content="Offline tank calculator: gauges, room, kill and alarm times.">
+  <title>Tank Calculator</title>
+  <link rel="icon" type="image/png" href="./favicon.png">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <style>
+    :root {
+      --bg: #e8e4d9;
+      --card: #fffdf8;
+      --ink: #121417;
+      --muted: #3a4149;
+      --line: #1a1a1a;
+      --navy: #102033;
+      --orange: #c45c12;
+      --orange-d: #9a4308;
+      --gold: #ffe566;
+      --warn-bg: #fff3c4;
+      --warn-ink: #5a3e00;
+      --danger: #9b1020;
+      --danger-bg: #fde8eb;
+      --ok: #0d5c3d;
+      --ok-bg: #e5f5ee;
+      --shadow: 0 1px 2px rgba(0,0,0,.18);
+      --radius: 12px;
+      --tap: 52px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); }
+    body {
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.4;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: max(12px, env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom));
+      -webkit-text-size-adjust: 100%;
+    }
+    h1 { margin: 0; font-size: 1.55rem; letter-spacing: -0.02em; }
+    h2 { margin: 0 0 12px; font-size: 1.15rem; }
+    p { margin: 0 0 10px; }
+    button, input, select, textarea { font: inherit; color: var(--ink); }
+    button { cursor: pointer; }
+    input, select, textarea {
+      background: #fff;
+      border: 2px solid #222;
+      border-radius: 8px;
+      min-height: var(--tap);
+      padding: 8px 10px;
+      width: 100%;
+    }
+    textarea { min-height: 120px; resize: vertical; line-height: 1.35; }
+    input:focus, select:focus, button:focus-visible, textarea:focus {
+      outline: 3px solid var(--orange);
+      outline-offset: 1px;
+    }
+    label { display: block; font-weight: 700; font-size: 0.92rem; margin: 0 0 6px; }
+    .sub { color: var(--muted); font-weight: 500; font-size: 0.92rem; }
+    .hdr {
+      background: var(--navy);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 16px 16px 14px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+    }
+    .hdr p { color: #d7e2ee; margin: 6px 0 0; font-size: 0.95rem; }
+    .card {
+      background: var(--card);
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .field { flex: 1 1 140px; min-width: 120px; }
+    .field.wide { flex: 1 1 220px; }
+    .pad-bar { display: flex; gap: 8px; align-items: stretch; margin-bottom: 14px; }
+    .pad-chips {
+      display: flex; gap: 8px; flex: 1; overflow-x: auto;
+      -webkit-overflow-scrolling: touch; padding-bottom: 2px;
+    }
+    .chip, .btn {
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      min-height: var(--tap);
+      padding: 8px 14px;
+      font-weight: 700;
+      background: #fff;
+      white-space: nowrap;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .chip.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .btn-add {
+      background: var(--orange);
+      color: #fff;
+      border-color: var(--orange-d);
+      flex: 0 0 auto;
+      min-width: 108px;
+    }
+    .btn-navy { background: var(--navy); color: #fff; border-color: #071018; }
+    .btn-ghost { background: #fff; }
+    .btn-danger { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .btn-row .btn { flex: 1 1 140px; }
+    .now-btn { min-width: 90px; flex: 0 0 auto; }
+    .banner, .warn {
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-weight: 700;
+      margin: 0 0 14px;
+      border: 2px solid #c9a227;
+      background: var(--warn-bg);
+      color: var(--warn-ink);
+    }
+    .banner a { color: #7a4a00; }
+    .banner.ok {
+      background: var(--ok-bg);
+      border-color: var(--ok);
+      color: var(--ok);
+      font-weight: 600;
+    }
+    .banner.hidden { display: none; }
+    .warn { margin: 0 0 10px; }
+    .tank {
+      border: 2px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    .tank-top { display: flex; gap: 8px; align-items: end; }
+    .tank-top .name { flex: 0 0 110px; }
+    .tank-top .level { flex: 1 1 auto; }
+    .tank-top .del { flex: 0 0 52px; min-width: 52px; padding: 8px 0; }
+    .custom-block { margin-top: 10px; padding-top: 10px; border-top: 1px solid #ccc; }
+    .check {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; margin: 8px 0 0; min-height: 44px;
+    }
+    .check input { width: 24px; height: 24px; min-height: 24px; flex: none; accent-color: var(--navy); }
+    .results { background: var(--navy); color: #fff; border-color: #071018; }
+    .results h2 { color: #fff; }
+    .stat { margin: 0 0 8px; font-size: 1.02rem; }
+    .stat b, .big { color: var(--gold); font-weight: 800; }
+    .big { display: block; font-size: 1.55rem; line-height: 1.2; margin: 2px 0 4px; }
+    .clock { color: #fff; font-weight: 700; }
+    .falling { color: #ffd0a8; }
+    .over { color: #ff8b8b; }
+    .hint { font-size: 0.88rem; color: var(--muted); font-weight: 500; margin-top: 4px; }
+    .results .hint { color: #c5d3e0; }
+    .install { font-size: 0.92rem; color: var(--muted); }
+    .install summary, .backup summary { font-weight: 800; color: var(--ink); cursor: pointer; padding: 8px 0; }
+    .empty-prompt { display: none; text-align: center; padding: 28px 16px 22px; }
+    .empty-prompt h2 { margin-bottom: 8px; font-size: 1.4rem; }
+    .empty-prompt .btn-add { margin-top: 16px; min-height: 56px; min-width: 200px; font-size: 1.1rem; }
+    body.no-pads .has-pad { display: none; }
+    body.no-pads .empty-prompt { display: block; }
+    body.no-pads .pad-bar { justify-content: center; }
+    .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+    #saveStatus { font-size: 0.88rem; font-weight: 600; color: #c5d3e0; margin-top: 8px; }
+    @media (min-width: 600px) {
+      body { padding-left: 20px; padding-right: 20px; }
+      .pad-chips { flex-wrap: wrap; overflow: visible; }
+    }
+  </style>
+</head>
+<body>
+  <div id="storageBanner" class="banner hidden" role="status"></div>
+
+  <header class="hdr">
+    <h1>Tank Calculator</h1>
+    <p>This copy starts blank — add your own pads. Open it as a web page (not from Drive) so it can save.</p>
+    <div id="saveStatus"></div>
+  </header>
+
+  <div class="pad-bar">
+    <div class="pad-chips" id="padChips"></div>
+    <button type="button" class="btn btn-add" id="addPad">+ Add pad</button>
+  </div>
+
+  <section class="card empty-prompt" id="emptyState">
+    <h2>Add a pad to get started</h2>
+    <p>This copy has no pads preloaded. Tap Add pad, then enter the tank count, height, barrels per inch, kill, alarm, and production rate for your location.</p>
+    <button type="button" class="btn btn-add" id="addPadEmpty">+ Add pad</button>
+  </section>
+
+  <section class="card has-pad" id="setupCard">
+    <h2>Pad setup</h2>
+    <p class="sub">Change anything for this pad. It saves automatically on this device.</p>
+    <div id="placeholders"></div>
+    <div class="row">
+      <div class="field wide">
+        <label for="padName">Pad name</label>
+        <input id="padName" maxlength="60" autocomplete="off" autocapitalize="words">
+      </div>
+      <div class="field">
+        <label for="rate">Production (bbl/day)</label>
+        <input id="rate" inputmode="decimal" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="lact">LACT shipping (bbl/day)</label>
+        <input id="lact" inputmode="decimal" autocomplete="off">
+      </div>
+    </div>
+    <p class="sub" style="margin: 12px 0 8px;">Defaults for tanks on this pad. A single tank can override these below.</p>
+    <div class="row">
+      <div class="field">
+        <label for="heightFt">Tank height (ft)</label>
+        <input id="heightFt" inputmode="decimal" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="bpi">bbl / inch</label>
+        <input id="bpi" inputmode="decimal" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="killFt">Kill level (ft)</label>
+        <input id="killFt" inputmode="decimal" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="alarmFt">Alarm level (ft)</label>
+        <input id="alarmFt" inputmode="decimal" autocomplete="off">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-danger" id="deletePad">Delete this pad</button>
+      <button type="button" class="btn btn-ghost" id="resetPad">Reset pad to original</button>
+    </div>
+  </section>
+
+  <section class="card has-pad" id="gaugesCard">
+    <h2>Gauges</h2>
+    <div class="row" style="align-items:end; margin-bottom:12px;">
+      <div class="field wide">
+        <label for="gaugedAt">Gauged at</label>
+        <input id="gaugedAt" type="datetime-local">
+      </div>
+      <button type="button" class="btn btn-navy now-btn" id="setNow">Set to now</button>
+    </div>
+    <p class="sub">Type feet and inches like 17'8, or decimal feet like 17.7 from the Allen-Bradley screen. Leave a tank blank if it is closed.</p>
+    <div id="tanks"></div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-add" id="addTank">+ Add tank</button>
+    </div>
+  </section>
+
+  <section class="card results has-pad" id="results"></section>
+
+  <section class="card has-pad" id="untilCard">
+    <h2>How low to last until…</h2>
+    <label for="deadline">Need room until</label>
+    <input id="deadline" type="datetime-local">
+    <div id="untilOut" style="margin-top:12px; font-weight:700;"></div>
+  </section>
+
+  <section class="card has-pad" id="drawCard">
+    <h2>Time to draw down to a level</h2>
+    <p class="sub">Uses net rate (production minus LACT). LACT has to be shipping more than the well makes for the level to fall.</p>
+    <label for="drawTo">Target level (all open tanks)</label>
+    <input id="drawTo" placeholder="10 or 10'0" autocomplete="off">
+    <div id="drawOut" style="margin-top:12px; font-weight:700;"></div>
+  </section>
+
+  <section class="card backup" id="backupCard">
+    <h2>Backup</h2>
+    <p class="sub">If this page was opened from Google Drive, a text message, or the Files app, the phone may not keep your data. Save a backup, and use the web link plus Add to Home Screen so it can save on the phone.</p>
+    <div class="btn-row">
+      <button type="button" class="btn btn-navy" id="exportFile">Download backup</button>
+      <button type="button" class="btn btn-navy" id="exportCopy">Copy backup</button>
+      <button type="button" class="btn btn-ghost" id="exportShare">Share backup</button>
+    </div>
+    <label for="backupText" style="margin-top:14px;">Backup code</label>
+    <textarea id="backupText" placeholder="Your backup appears here. You can also paste a backup and import it." autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+    <div class="btn-row">
+      <button type="button" class="btn btn-add" id="importPaste">Import pasted backup</button>
+      <button type="button" class="btn btn-ghost" id="importFileBtn">Import from file</button>
+    </div>
+    <input id="importFile" type="file" accept="application/json,.json,text/plain,.txt" class="sr" aria-label="Import backup file">
+    <p class="hint" id="backupMsg"></p>
+  </section>
+
+  <details class="card install" open>
+    <summary>Save this app to your phone</summary>
+    <div style="margin-top:8px;">
+      <p><b>Use the web link, not Google Drive.</b> Opening the file from Drive or Files is why it was not saving, especially on iPhone.</p>
+      <p><b>Web link:</b> <a href="https://beelee1780-creator.github.io/tank-calculator/">https://beelee1780-creator.github.io/tank-calculator/</a></p>
+      <p><b>iPhone:</b> Open the link in <b>Safari</b> (not the Drive or Files preview). Tap the Share button, then <b>Add to Home Screen</b>. Open it from the Home Screen after that. It will work offline and keep your gauges on this phone.</p>
+      <p><b>Android:</b> Open the link in <b>Chrome</b>, tap the menu (three dots), then <b>Add to Home screen</b> or <b>Install app</b>.</p>
+      <p>If you ever need to move the data, use Backup below: download or copy a backup, then import it on the other phone.</p>
+      <p id="liveLinks"></p>
+    </div>
+  </details>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var STORAGE_KEY = "tank-calculator-blank-v1";
+    var IS_BLANK = true;
+    var SW_PATH = "/tank-calculator/sw.js";
+    var LIVE_HOME = "https://beelee1780-creator.github.io/tank-calculator/";
+    var LIVE_SHARE = "https://beelee1780-creator.github.io/tank-calculator/";
+    var ICON192 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAADN0lEQVR4nO3bMW4UBxSA4XXEAXyAFAhRuKEiTSQOkBMg5JPQoXQ5iYU4QQ6AlIaOxgVKxUEoLFkWWlm7/vHsvPH3VRRTvNn59dbMzpydP3+9g4f67dQDMJuASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIjk2akHWIvrz1dHHX/x5vKRJpnFBiIREImASAREIiASAZEIiORsw6/1HHtr51Ft9b7RZjfQqurZrW+eX2WbAa3zaq1zqmibAbEYAZEIiERAJAIiERCJgEgERDL1p4xN3pSb+HPHvIA2mc5dszIa9hW2+Xp2085x0ga6+8n+8fbve4788unD44/zEIePPWUPDdtAN+6/DHNNPK8xAd2un4mf8uFuz27KF9mYgI6yzsjWOVW0zYB267taa5vnV9nyq81bvWarstkNxDIERCIgEgGRCIhEQCQCIhEQiYBItnwnelUOfMJk3N1zG4jEBlrIuNVyIBuIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGReKBsIR5phT1soIWMWy0HsoFIBEQiIBIBkcz7I/rji39PPcIjevf/X6ce4Tg2EImASAREIiASAZHM+1/YT35/dXH/Ad+/Xi8zydNkA5EIiERAJAIiERCJgEgERCIgkvE3Eqd4+c9/Bx037dFpG4jEBlrIt/d/HnagB8p4SgREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkXiofiFe64E9bKCFeK0H9hAQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEg8E70Qb2XAHjbQQryVAXsIiERAJAIiERCJgEgERCIgEgGRCIhk/E8Z379en3qEJ80GIhEQiYBIBEQiIJIxAV28uTz1CEv48unDzT+mnO+YgFins/Pnr089wxGuP1+deoQlTFk/u3EbaNAn+2CzznHYBrq1yVU0K50bUwNiJYZ9hbE2AiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASARE8gM9w10Razqa9gAAAABJRU5ErkJggg==";
+    var ICON512 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkOtAAAJK0lEQVR4nO3dsU1kRwCA4cXaAijAAbIISBxxCdLVcQGVkJ0uoxJkXQUuAInkMicEhFeIAxdw+L23O7z5v6+AYbQ7b/6dHRAXl1e3BwB6fhs9AQDGEACAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiDqOngCs9fr8NOpH33y+H/WjYT0nAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAqIvLq9vRc2ASr89Po6dQcfP5fvQUmIEAsAFb/xAywEq+AmItu/8oXnlWEgBWsQeN5fVnDQFgObvPR+BdYDEBAIgSABbywfPj8F6wjAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAERdXF7djp4DZ/L6/DR6CuzDzef70VPgHARgfvZ9FlOCuQnAzGz9bEIGZuUOYFp2f7ZiLc1KAObkiWVbVtSUBGBCnlVOwbqajwDMxlPK6VhdkxGAqXg+OTVrbCYCMA9PJudhpU1DACbhmeScrLc5HEdPgHP79OXbJuP8+P51k3HYhLeVBQRgBu/8OLbVHsHE/lsk78nA6/OTPxDbOwFIsPXzv7w/A+yaOwCAKAHYvV9+/+PjP8v8cuW4Ct47AWAhXfk4vBcsIwCTszWwhvUzNwFgObvDR+BdYDEBYBW7z1hef9YQANayB43ilWclfwfABvza+JnZ+tmEALAZuxLsi6+AAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACDqOHoCwFo/vn8dPQV2yQkAIEoAAKIEACBKAACiXALD7n368u10g7thnpgTAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABEHUdPAFjrx/evo6fALjkBAEQJAECUAABECQBAlEtg2L1PX76dbnA3zBNzAgCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCj/EGZabw93h8Phrz9Gz4Ode3v4+3A4XD++jJ4I23MCAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCI8v8AOPz+5822A/7853XbAYFTcAIAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIg6jp4AsNb148vpBn97uDvd4IzlBAAQJQAAUQIAECUAAFEugWH33NOyjBMAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARB1HTwBY6/rx5XSDvz3cnW5wxnICAIgSAIAoAQCIEgCAKJfAsHvuaVnGCQAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACijqMnAKx1/fhyusHfHu5ONzhjOQEARAkAQJQAAEQJAECUS2DYPfe0LOMEABAlAABRAgAQJQAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAEHUcPQHG+/nP6+gpAAM4AQBECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECcDu3Xy+Hz0Foqy9vRMAgCgBAIgSgBk4iXN+Vt0EBAAgSgAm4eMY52S9zeHi8up29BzYzOvz0+gpMD+7/zScAKbiyeTUrLGZCMBsPJ+cjtU1GQGYkKeUU7Cu5iMAc/Kssi0rakoCMC1PLFuxlmblt4Dm51eDWMzWPzcBCFEC3sm+HyEAAFHuAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAg6l+wXazzDcv+KwAAAABJRU5ErkJggg==";
+
+    if (!Array.prototype.find) {
+      Array.prototype.find = function (fn) {
+        for (var i = 0; i < this.length; i++) if (fn(this[i], i, this)) return this[i];
+      };
+    }
+
+    function tank(name, level) {
+      return { id: uid(), name: name, level: level || "", heightFt: null, bpi: null, killFt: null, alarmFt: null };
+    }
+
+        function factoryPads() {
+      return [];
+    }
+
+
+    function uid() {
+      return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+    }
+
+    function num(v, fallback) {
+      if (v === "" || v == null || (typeof v === "number" && !isFinite(v))) return fallback;
+      var n = typeof v === "number" ? v : parseFloat(String(v).replace(/,/g, ""));
+      return isFinite(n) ? n : fallback;
+    }
+
+    function parseLevel(s) {
+      if (s == null) return null;
+      var t = String(s).trim().toLowerCase().replace(/inches|inch/g, "in").replace(/feet/g, "ft");
+      if (!t) return null;
+      var m = t.match(/^(\d+)\s*'\s*(\d+(?:\.\d+)?)?\s*"?$/);
+      if (m) return parseFloat(m[1]) * 12 + (m[2] ? parseFloat(m[2]) : 0);
+      m = t.match(/^(\d+)\s*(?:ft)\s+(\d+(?:\.\d+)?)\s*(?:in|" )?$/);
+      if (m) return parseFloat(m[1]) * 12 + parseFloat(m[2]);
+      m = t.match(/^(\d+)\s+(\d+(?:\.\d+)?)$/);
+      if (m) return parseFloat(m[1]) * 12 + parseFloat(m[2]);
+      m = t.match(/^(\d+(?:\.\d+)?)\s*(?:'|ft|"|in)?$/);
+      if (m) return parseFloat(m[1]) * 12;
+      return null;
+    }
+
+    function fmtIn(inches) {
+      var r = Math.round(inches);
+      var sign = r < 0 ? "-" : "";
+      r = Math.abs(r);
+      return sign + Math.floor(r / 12) + "'" + (r % 12) + '"';
+    }
+
+    function fmtFt(inches) {
+      return (inches / 12).toFixed(1);
+    }
+
+    function fmtBoth(inches) {
+      return fmtIn(inches) + " (" + fmtFt(inches) + " ft)";
+    }
+
+    function fmtDur(h) {
+      if (!isFinite(h)) return "never";
+      if (h < 0) return "never (level falling)";
+      var hours = h;
+      var d = Math.floor(hours / 24);
+      var hr = Math.floor(hours % 24);
+      var mi = Math.round((hours * 60) % 60);
+      if (mi === 60) { mi = 0; hr += 1; }
+      if (hr === 24) { hr = 0; d += 1; }
+      return (d ? d + "d " : "") + hr + "h " + mi + "m";
+    }
+
+    function fmtWhen(start, h) {
+      if (!isFinite(h) || h < 0 || !start || isNaN(start.getTime())) return "—";
+      var t = new Date(start.getTime() + h * 3600000);
+      return t.toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    }
+
+    function localInputValue(d) {
+      var x = new Date(d.getTime());
+      x.setMinutes(x.getMinutes() - x.getTimezoneOffset());
+      return x.toISOString().slice(0, 16);
+    }
+
+    function parseLocalInput(s) {
+      if (!s) return null;
+      var d = new Date(s);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function specs(pad, tnk) {
+      return {
+        id: tnk.id,
+        name: tnk.name || "Tank",
+        level: tnk.level,
+        heightFt: tnk.heightFt != null && tnk.heightFt !== "" ? num(tnk.heightFt, pad.heightFt) : pad.heightFt,
+        bpi: tnk.bpi != null && tnk.bpi !== "" ? num(tnk.bpi, pad.bpi) : pad.bpi,
+        killFt: tnk.killFt != null && tnk.killFt !== "" ? num(tnk.killFt, pad.killFt) : pad.killFt,
+        alarmFt: tnk.alarmFt != null && tnk.alarmFt !== "" ? num(tnk.alarmFt, pad.alarmFt) : pad.alarmFt,
+        custom: tnk.heightFt != null || tnk.bpi != null || tnk.killFt != null || tnk.alarmFt != null
+      };
+    }
+
+    function openTanks(pad) {
+      var list = [];
+      (pad.tanks || []).forEach(function (tnk) {
+        var sp = specs(pad, tnk);
+        var inches = parseLevel(tnk.level);
+        if (inches == null) return;
+        sp.inches = inches;
+        sp.bpi = num(sp.bpi, 0);
+        sp.killIn = num(sp.killFt, 0) * 12;
+        sp.alarmIn = num(sp.alarmFt, 0) * 12;
+        list.push(sp);
+      });
+      return list;
+    }
+
+    function compute(pad) {
+      var open = openTanks(pad);
+      var n = open.length;
+      var onHand = 0, room = 0, sumBpi = 0;
+      open.forEach(function (t) {
+        onHand += t.inches * t.bpi;
+        room += Math.max(0, t.killIn - t.inches) * t.bpi;
+        sumBpi += t.bpi;
+      });
+      var rate = num(pad.rate, 0);
+      var lact = num(pad.lact, 0);
+      var net = rate - lact;
+      var perHour = net / 24;
+      var hrsToKill = perHour > 0 ? room / perHour : (perHour < 0 ? -1 : Infinity);
+      var firstAlarm = null, firstKill = null;
+      if (n && perHour !== 0) {
+        open.forEach(function (t) {
+          var inchPerHr = (perHour / n) / (t.bpi || 1);
+          if (inchPerHr === 0) return;
+          var ha = (t.alarmIn - t.inches) / inchPerHr;
+          var hk = (t.killIn - t.inches) / inchPerHr;
+          if (perHour > 0) {
+            if (firstAlarm == null || ha < firstAlarm.h) firstAlarm = { h: ha, tank: t };
+            if (firstKill == null || hk < firstKill.h) firstKill = { h: hk, tank: t };
+          }
+        });
+      }
+      return { open: open, n: n, onHand: onHand, room: room, rate: rate, lact: lact, net: net, perHour: perHour, sumBpi: sumBpi, hrsToKill: hrsToKill, firstAlarm: firstAlarm, firstKill: firstKill };
+    }
+
+    function howLow(pad, start, deadline) {
+      var c = compute(pad);
+      if (!deadline || !start) return "Pick a date and time to see how low the tanks need to be now.";
+      var h = (deadline.getTime() - start.getTime()) / 3600000;
+      if (h <= 0) return "That time is not after the gauge time.";
+      if (c.perHour <= 0) return "Levels are falling or flat, so you should last past that time without lowering them.";
+      if (!c.n) return "Enter at least one open tank gauge.";
+      var need = c.perHour * h;
+      var sameKill = true, sameBpi = true;
+      var k0 = c.open[0].killIn, b0 = c.open[0].bpi;
+      c.open.forEach(function (t) {
+        if (t.killIn !== k0) sameKill = false;
+        if (t.bpi !== b0) sameBpi = false;
+      });
+      var maxRoom = 0;
+      c.open.forEach(function (t) { maxRoom += t.killIn * t.bpi; });
+      if (need > maxRoom + 1e-9) return "Not possible even with empty tanks. About " + Math.round(need) + " bbl would come in, and empty tanks only hold about " + Math.round(maxRoom) + " bbl before the kill.";
+      if (sameKill && sameBpi) {
+        var avg = k0 - need / (c.n * b0);
+        return "Average " + fmtBoth(avg) + " or lower across " + c.n + " open tank" + (c.n === 1 ? "" : "s") + " (about " + Math.round(need) + " bbl coming in).";
+      }
+      return "You need about " + Math.round(need) + " bbl of room across the open tanks (incoming before then). Right now you have " + Math.round(c.room) + " bbl of room. Mixed tank sizes, so set each tank so total room is at least " + Math.round(need) + " bbl.";
+    }
+
+    function drawDown(pad, start) {
+      var target = parseLevel(pad.drawTo);
+      if (target == null) return "Enter a target level, like 10 or 10'0.";
+      var c = compute(pad);
+      if (!c.n) return "Enter at least one open tank gauge.";
+      var pull = 0, above = 0;
+      c.open.forEach(function (t) {
+        if (t.inches > target) {
+          pull += (t.inches - target) * t.bpi;
+          above += 1;
+        }
+      });
+      if (above === 0) return "All " + c.n + " open tanks are already at or below " + fmtBoth(target) + ".";
+      var msg = "About " + Math.round(pull) + " bbl to pull to get " + above + " tank" + (above === 1 ? "" : "s") + " down to " + fmtBoth(target) + ".";
+      if (c.perHour < 0) {
+        var hrs = pull / (-c.perHour);
+        return msg + " At the current net drain, that takes " + fmtDur(hrs) + ", around " + fmtWhen(start, hrs) + ".";
+      }
+      if (c.perHour === 0) return msg + " Net rate is zero, so the level will not fall until LACT exceeds production.";
+      return msg + " Net is still filling at " + Math.round(c.net) + " bbl/day. LACT has to ship more than production for the tanks to fall.";
+    }
+
+    /* ---------------- storage ---------------- */
+
+    var memoryStore = null;
+    var lastSavedAt = null;
+    var storageMode = "unknown"; /* ok | memory | blocked | insecure */
+    var storageDetail = "";
+
+    function insecureOrigin() {
+      var p = location.protocol;
+      if (p === "file:" || p === "blob:" || p === "about:") return true;
+      var h = (location.hostname || "").toLowerCase();
+      if (!h && p !== "http:" && p !== "https:") return true;
+      if (/(^|\.)(drive\.google\.com|docs\.google\.com|googleusercontent\.com)$/.test(h)) return true;
+      return false;
+    }
+
+    var storageWritable = false;
+
+    function probeStorage() {
+      var insecure = insecureOrigin();
+      storageWritable = false;
+      storageDetail = "";
+      try {
+        var k = STORAGE_KEY + "::probe";
+        var v = "ok-" + Date.now();
+        localStorage.setItem(k, v);
+        var back = localStorage.getItem(k);
+        localStorage.removeItem(k);
+        if (back !== v) throw new Error("readback failed");
+        storageWritable = true;
+        storageMode = insecure ? "insecure" : "ok";
+        if (insecure) storageDetail = "This page is not running as a regular website, so the phone may not keep your numbers after you close it.";
+      } catch (e) {
+        storageWritable = false;
+        storageMode = insecure ? "insecure" : "blocked";
+        storageDetail = (e && (e.name || e.message)) ? String(e.name || e.message) : "blocked";
+        if (insecure && !storageDetail) storageDetail = "This page is not running as a regular website, so the phone may not keep your numbers after you close it.";
+      }
+    }
+
+    function payload() {
+      return JSON.stringify({
+        app: "Tank Calculator",
+        version: 1,
+        storageKey: STORAGE_KEY,
+        savedAt: new Date().toISOString(),
+        padId: state.padId,
+        pads: state.pads
+      });
+    }
+
+    function save() {
+      var data = payload();
+      memoryStore = data;
+      lastSavedAt = new Date();
+      if (storageWritable) {
+        try {
+          localStorage.setItem(STORAGE_KEY, data);
+          if (localStorage.getItem(STORAGE_KEY) !== data) throw new Error("readback failed");
+        } catch (e) {
+          storageWritable = false;
+          storageMode = insecureOrigin() ? "insecure" : "blocked";
+          storageDetail = (e && (e.name || e.message)) ? String(e.name || e.message) : "save failed";
+        }
+      }
+      updateStorageBanner();
+      return storageWritable && storageMode === "ok";
+    }
+
+    function load() {
+      probeStorage();
+      var raw = null;
+      if (storageWritable) {
+        try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
+      }
+      if (!raw) return;
+      try {
+        var data = JSON.parse(raw);
+        applyBackup(data, true);
+        memoryStore = raw;
+      } catch (e) {}
+    }
+
+    function applyBackup(data, silent) {
+      if (!data || !Array.isArray(data.pads)) {
+        if (!silent) setBackupMsg("That backup is not valid.");
+        return false;
+      }
+      if (data.pads.length) {
+        state.pads = data.pads.map(normalizePad);
+        state.padId = data.padId || state.pads[0].id;
+        if (!state.pads.some(function (p) { return p.id === state.padId; })) state.padId = state.pads[0].id;
+      } else {
+        state.pads = [];
+        state.padId = null;
+      }
+      if (!silent) {
+        save();
+        renderAll();
+        setBackupMsg("Backup imported. " + state.pads.length + " pad" + (state.pads.length === 1 ? "" : "s") + " loaded.");
+      }
+      return true;
+    }
+
+    function fmtSaved(d) {
+      if (!d) return "";
+      return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    }
+
+    function updateStorageBanner() {
+      var el = document.getElementById("storageBanner");
+      var st = document.getElementById("saveStatus");
+      var home = LIVE_HOME || "";
+      var share = LIVE_SHARE || "";
+      var link = IS_BLANK ? (share || home) : (home || share);
+      var href = link ? '<a href="' + link + '">' + link + "</a>" : "the web link";
+      if (storageMode === "ok" && storageWritable && !insecureOrigin()) {
+        el.className = "banner hidden";
+        el.innerHTML = "";
+        st.textContent = lastSavedAt ? ("Saved on this device • " + fmtSaved(lastSavedAt)) : "Ready to save on this device";
+        return;
+      }
+      el.className = "banner";
+      var msg = "Your work is only held in this screen until you leave. It may not come back after you close the app.";
+      if (storageMode === "insecure") {
+        msg = "Opened from a file, Google Drive, or a preview — iPhone and some browsers will not keep your numbers. Open " + href + " in Safari (iPhone) or Chrome (Android), then add it to your Home Screen. Also save a backup below.";
+      } else if (storageMode === "blocked") {
+        msg = "This browser is blocking saved data" + (storageDetail ? " (" + storageDetail + ")" : "") + ". Open " + href + " in Safari or Chrome, or use a backup below so you don’t lose gauges.";
+      }
+      el.innerHTML = msg;
+      st.textContent = lastSavedAt ? ("Held in this screen only • " + fmtSaved(lastSavedAt) + " — save a backup") : "Not saving on this device — use a backup";
+    }
+
+    /* ---------------- state ---------------- */
+
+    var state = IS_BLANK ? { padId: null, pads: [] } : { padId: "turbo", pads: factoryPads() };
+    var buildingTanks = false;
+
+    function currentPad() {
+      if (!state.pads.length) return null;
+      var p = state.pads.find(function (x) { return x.id === state.padId; });
+      return p || state.pads[0];
+    }
+
+    function normalizePad(p) {
+      if (!p.id) p.id = uid();
+      if (!p.name) p.name = "New pad";
+      p.rate = num(p.rate, 0);
+      p.lact = num(p.lact, 0);
+      p.heightFt = num(p.heightFt, 25);
+      p.bpi = num(p.bpi, 1.67);
+      p.killFt = num(p.killFt, 23.5);
+      p.alarmFt = num(p.alarmFt, 18);
+      p.killPlaceholder = !!p.killPlaceholder;
+      p.alarmPlaceholder = !!p.alarmPlaceholder;
+      p.gaugedAt = p.gaugedAt || "";
+      p.deadline = p.deadline || "";
+      p.drawTo = p.drawTo || "";
+      if (!Array.isArray(p.tanks) || !p.tanks.length) p.tanks = [tank("1", "")];
+      p.tanks.forEach(function (t, i) {
+        if (!t.id) t.id = uid();
+        if (!t.name) t.name = String(i + 1);
+        if (t.level == null) t.level = "";
+        ["heightFt", "bpi", "killFt", "alarmFt"].forEach(function (k) {
+          if (t[k] === "" || t[k] === undefined) t[k] = null;
+        });
+      });
+      return p;
+    }
+
+    function on(el, types, fn) {
+      if (!el) return;
+      types.split(" ").forEach(function (t) { el.addEventListener(t, fn, false); });
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c];
+      });
+    }
+
+    function renderChips() {
+      var el = document.getElementById("padChips");
+      el.innerHTML = state.pads.map(function (p) {
+        var onCls = p.id === state.padId ? " on" : "";
+        return '<button type="button" class="chip' + onCls + '" data-pad="' + escapeHtml(p.id) + '">' + escapeHtml(p.name) + "</button>";
+      }).join("");
+    }
+
+    function fillSetup() {
+      var p = currentPad();
+      if (!p) return;
+      document.getElementById("padName").value = p.name;
+      document.getElementById("rate").value = p.rate;
+      document.getElementById("lact").value = p.lact;
+      document.getElementById("heightFt").value = p.heightFt;
+      document.getElementById("bpi").value = p.bpi;
+      document.getElementById("killFt").value = p.killFt;
+      document.getElementById("alarmFt").value = p.alarmFt;
+      document.getElementById("gaugedAt").value = p.gaugedAt || localInputValue(new Date());
+      if (!p.gaugedAt) { p.gaugedAt = document.getElementById("gaugedAt").value; save(); }
+      document.getElementById("deadline").value = p.deadline || "";
+      document.getElementById("drawTo").value = p.drawTo || "";
+      var ph = [];
+      if (p.alarmPlaceholder) ph.push("The alarm level on this pad is a placeholder. Set the real alarm.");
+      if (p.killPlaceholder) ph.push("The kill level on this pad is a placeholder. Set the real kill.");
+      document.getElementById("placeholders").innerHTML = ph.map(function (t) { return '<div class="warn">' + t + "</div>"; }).join("");
+      var resetBtn = document.getElementById("resetPad");
+      resetBtn.style.display = factoryPads().some(function (f) { return f.id === p.id; }) ? "" : "none";
+    }
+
+    function field(id, label, val, key) {
+      return '<div class="field"><label for="' + id + '">' + label + "</label>" +
+        '<input id="' + id + '" data-k="' + key + '" value="' + escapeHtml(val) + '" inputmode="decimal" autocomplete="off"></div>';
+    }
+
+    function renderTanks() {
+      var p = currentPad();
+      var el = document.getElementById("tanks");
+      if (!p) { el.innerHTML = ""; return; }
+      buildingTanks = true;
+      el.innerHTML = p.tanks.map(function (t, i) {
+        var custom = t.heightFt != null || t.bpi != null || t.killFt != null || t.alarmFt != null;
+        var body = "";
+        if (custom) {
+          body = '<div class="custom-block row">' +
+            field("t-h-" + i, "Height (ft)", t.heightFt != null ? t.heightFt : p.heightFt, "heightFt") +
+            field("t-b-" + i, "bbl / inch", t.bpi != null ? t.bpi : p.bpi, "bpi") +
+            field("t-k-" + i, "Kill (ft)", t.killFt != null ? t.killFt : p.killFt, "killFt") +
+            field("t-a-" + i, "Alarm (ft)", t.alarmFt != null ? t.alarmFt : p.alarmFt, "alarmFt") +
+            "</div>";
+        }
+        return '<div class="tank" data-idx="' + i + '">' +
+          '<div class="tank-top">' +
+            '<div class="name"><label for="t-n-' + i + '">Name</label><input id="t-n-' + i + '" data-k="name" value="' + escapeHtml(t.name) + '" autocomplete="off"></div>' +
+            '<div class="level"><label for="t-l-' + i + '">Gauge</label><input id="t-l-' + i + '" data-k="level" value="' + escapeHtml(t.level) + '" placeholder="blank = closed" autocomplete="off"></div>' +
+            '<button type="button" class="btn btn-danger del" data-del="' + i + '" aria-label="Delete tank">×</button>' +
+          "</div>" +
+          '<label class="check"><input type="checkbox" data-k="custom"' + (custom ? " checked" : "") + "> This tank is a different size</label>" +
+          body +
+        "</div>";
+      }).join("");
+      buildingTanks = false;
+    }
+
+    function renderResults() {
+      var p = currentPad();
+      if (!p) {
+        document.getElementById("results").innerHTML = "";
+        document.getElementById("untilOut").textContent = "";
+        document.getElementById("drawOut").textContent = "";
+        return;
+      }
+      var start = parseLocalInput(p.gaugedAt) || new Date();
+      var c = compute(p);
+      var html = "<h2>Results</h2>";
+      if (!c.n) {
+        html += '<div class="stat">Enter a gauge on at least one open tank.</div>';
+        document.getElementById("results").innerHTML = html;
+        document.getElementById("untilOut").textContent = howLow(p, start, parseLocalInput(p.deadline));
+        document.getElementById("drawOut").textContent = drawDown(p, start);
+        return;
+      }
+      html += '<div class="stat">On hand: <span class="big">' + Math.round(c.onHand) + " bbl</span> in " + c.n + " open tank" + (c.n === 1 ? "" : "s") + "</div>";
+      html += '<div class="stat">Room before kill: <span class="big">' + Math.round(c.room) + " bbl</span></div>";
+      var netCls = "big" + (c.net < 0 ? " falling" : "");
+      html += '<div class="stat">Net change: <span class="' + netCls + '">' + (c.net > 0 ? "+" : "") + Math.round(c.net) + " bbl/day</span>";
+      html += " (" + (c.perHour >= 0 ? "+" : "") + c.perHour.toFixed(1) + " bbl/hr";
+      if (c.n && Math.abs(c.perHour) > 0) {
+        var inchHr = (c.perHour / c.n) / (c.open[0].bpi || 1);
+        var uniform = c.open.every(function (t) { return t.bpi === c.open[0].bpi; });
+        if (uniform) html += ", about " + inchHr.toFixed(2) + " in/hr per tank";
+      }
+      html += ")</div>";
+      if (c.perHour <= 0) {
+        html += '<div class="stat falling" style="margin-top:12px;">Kill: <b>never</b> — level is ' + (c.perHour < 0 ? "falling" : "holding") + ".</div>";
+      } else {
+        html += '<div class="stat" style="margin-top:12px;">All remaining room used (kill): <span class="big">' + fmtDur(c.hrsToKill) + "</span>";
+        html += ' around <span class="clock">' + fmtWhen(start, c.hrsToKill) + "</span></div>";
+        if (c.firstKill && Math.abs(c.firstKill.h - c.hrsToKill) > 0.08 && c.firstKill.h >= 0) {
+          html += '<div class="stat">First tank hits its kill (' + escapeHtml(c.firstKill.tank.name) + " at " + fmtBoth(c.firstKill.tank.inches) + "): <b>" + fmtDur(c.firstKill.h) + "</b>, around <span class='clock'>" + fmtWhen(start, c.firstKill.h) + "</span>. That is sooner if tanks are not equalized.</div>";
+        }
+      }
+      if (c.firstAlarm) {
+        var a = c.firstAlarm;
+        if (a.h <= 0 && c.perHour > 0) {
+          html += '<div class="stat over">Alarm: ' + escapeHtml(a.tank.name) + " is already at or over " + fmtFt(a.tank.alarmIn) + " ft (" + fmtBoth(a.tank.inches) + ").</div>";
+        } else if (c.perHour > 0) {
+          html += '<div class="stat">Alarm: ' + escapeHtml(a.tank.name) + " (" + fmtBoth(a.tank.inches) + ") hits " + fmtFt(a.tank.alarmIn) + " ft in <span class='big'>" + fmtDur(a.h) + "</span> around <span class='clock'>" + fmtWhen(start, a.h) + "</span></div>";
+        }
+      } else if (c.perHour <= 0) {
+        html += '<div class="stat falling">Alarm will not trip while the level is falling.</div>';
+      }
+      var closed = (p.tanks.length - c.n);
+      if (closed > 0) html += '<p class="hint">' + closed + " tank" + (closed === 1 ? " is" : "s are") + " closed (blank gauge) and not counted.</p>";
+      html += '<p class="hint">Room-to-kill time uses all remaining room in open tanks. Alarm time assumes production splits evenly across open tanks, starting from each tank’s current gauge.</p>';
+      document.getElementById("results").innerHTML = html;
+      document.getElementById("untilOut").textContent = howLow(p, start, parseLocalInput(p.deadline));
+      document.getElementById("drawOut").textContent = drawDown(p, start);
+    }
+
+    function renderAll() {
+      document.body.classList.toggle("no-pads", !state.pads.length);
+      renderChips();
+      if (!state.pads.length) {
+        document.getElementById("tanks").innerHTML = "";
+        document.getElementById("results").innerHTML = "";
+        document.getElementById("untilOut").textContent = "";
+        document.getElementById("drawOut").textContent = "";
+        updateStorageBanner();
+        return;
+      }
+      fillSetup();
+      renderTanks();
+      renderResults();
+      updateStorageBanner();
+    }
+
+    function addPad() {
+      var n = state.pads.length + 1;
+      var p = normalizePad({
+        id: uid(),
+        name: "New pad " + n,
+        rate: 0, lact: 0,
+        heightFt: 25, bpi: 1.67, killFt: 23.5, alarmFt: 18,
+        tanks: [tank("1", ""), tank("2", ""), tank("3", ""), tank("4", "")],
+        gaugedAt: localInputValue(new Date())
+      });
+      state.pads.push(p);
+      state.padId = p.id;
+      save();
+      renderAll();
+      var name = document.getElementById("padName");
+      name.focus();
+      name.select();
+      document.getElementById("setupCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function switchPad(id) {
+      state.padId = id;
+      save();
+      renderAll();
+    }
+
+    /* ---------------- backup ---------------- */
+
+    function setBackupMsg(s) {
+      document.getElementById("backupMsg").textContent = s || "";
+    }
+
+    function backupFilename() {
+      var d = new Date();
+      var y = d.getFullYear();
+      var mo = String(d.getMonth() + 1);
+      if (mo.length < 2) mo = "0" + mo;
+      var da = String(d.getDate());
+      if (da.length < 2) da = "0" + da;
+      return "tank-calculator-backup-" + y + "-" + mo + "-" + da + ".json";
+    }
+
+    function refreshBackupBox() {
+      var box = document.getElementById("backupText");
+      if (box && document.activeElement !== box) box.value = payload();
+    }
+
+    function exportFile() {
+      var text = payload();
+      document.getElementById("backupText").value = text;
+      var name = backupFilename();
+      try {
+        var blob = new Blob([text], { type: "application/json" });
+        if (navigator.share && typeof File === "function") {
+          var file = new File([blob], name, { type: "application/json" });
+          if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+            navigator.share({ files: [file], title: "Tank Calculator backup" }).then(function () {
+              setBackupMsg("Backup shared.");
+            }).catch(function () { fallbackDownload(blob, name, text); });
+            return;
+          }
+        }
+        fallbackDownload(blob, name, text);
+      } catch (e) {
+        fallbackDownload(null, name, text);
+      }
+    }
+
+    function fallbackDownload(blob, name, text) {
+      try {
+        if (!blob) blob = new Blob([text], { type: "application/json" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = name;
+        a.rel = "noopener";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+        setBackupMsg("Backup file saved, or copy the backup code below if your phone did not download it.");
+      } catch (e) {
+        setBackupMsg("Download is not available here. Copy the backup code below and paste it somewhere safe.");
+      }
+    }
+
+    function copyBackup() {
+      var text = payload();
+      document.getElementById("backupText").value = text;
+      function ok() { setBackupMsg("Backup copied. Paste it into a note or email so you can import it later."); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(ok).catch(function () { legacyCopy(text) ? ok() : failCopy(); });
+      } else if (legacyCopy(text)) ok();
+      else failCopy();
+    }
+
+    function legacyCopy(text) {
+      var ta = document.getElementById("backupText");
+      ta.value = text;
+      ta.focus();
+      ta.select();
+      try { return document.execCommand("copy"); } catch (e) { return false; }
+    }
+
+    function failCopy() {
+      setBackupMsg("Copy did not work. Select the backup code below and copy it yourself.");
+      var ta = document.getElementById("backupText");
+      ta.focus();
+      ta.select();
+    }
+
+    function shareBackup() {
+      var text = payload();
+      document.getElementById("backupText").value = text;
+      if (navigator.share) {
+        navigator.share({ title: "Tank Calculator backup", text: text }).then(function () {
+          setBackupMsg("Backup shared.");
+        }).catch(function () { copyBackup(); });
+      } else copyBackup();
+    }
+
+    function importFromText(text) {
+      var raw = String(text || "").trim();
+      if (!raw) { setBackupMsg("Paste a backup first."); return; }
+      var data;
+      try { data = JSON.parse(raw); } catch (e) { setBackupMsg("That backup could not be read. Check you copied the whole thing."); return; }
+      if (!Array.isArray(data.pads)) { setBackupMsg("That backup is not valid."); return; }
+      if (!confirm("Replace the pads on this device with this backup (" + data.pads.length + " pad" + (data.pads.length === 1 ? "" : "s") + ")?")) return;
+      applyBackup(data, false);
+    }
+
+    /* ---------------- events ---------------- */
+
+    document.getElementById("padChips").addEventListener("click", function (e) {
+      var btn = e.target.closest ? e.target.closest("[data-pad]") : null;
+      if (btn) switchPad(btn.getAttribute("data-pad"));
+    });
+    on(document.getElementById("addPad"), "click", addPad);
+    on(document.getElementById("addPadEmpty"), "click", addPad);
+
+    on(document.getElementById("deletePad"), "click", function () {
+      var p = currentPad();
+      if (!p) return;
+      if (!IS_BLANK && state.pads.length < 2) {
+        alert("Keep at least one pad. Add another first if you want to replace this one.");
+        return;
+      }
+      if (!confirm("Delete " + p.name + " and all of its tanks? This cannot be undone on this device.")) return;
+      var idx = state.pads.findIndex ? state.pads.findIndex(function (x) { return x.id === p.id; }) : (function () {
+        for (var i = 0; i < state.pads.length; i++) if (state.pads[i].id === p.id) return i;
+        return -1;
+      })();
+      state.pads.splice(idx, 1);
+      state.padId = state.pads.length ? state.pads[Math.max(0, idx - 1)].id : null;
+      save();
+      renderAll();
+    });
+
+    on(document.getElementById("resetPad"), "click", function () {
+      var p = currentPad();
+      if (!p) return;
+      var factory = factoryPads().find(function (f) { return f.id === p.id; });
+      if (!factory) return;
+      if (!confirm("Reset " + p.name + " back to the original tanks, rates, and last saved starting gauges?")) return;
+      var i, idx = -1;
+      for (i = 0; i < state.pads.length; i++) if (state.pads[i].id === p.id) idx = i;
+      factory.gaugedAt = localInputValue(new Date());
+      state.pads[idx] = factory;
+      save();
+      renderAll();
+    });
+
+    on(document.getElementById("addTank"), "click", function () {
+      var p = currentPad();
+      if (!p) return;
+      p.tanks.push(tank(String(p.tanks.length + 1), ""));
+      save();
+      renderTanks();
+      renderResults();
+      var inputs = document.querySelectorAll("#tanks .level input");
+      var last = inputs[inputs.length - 1];
+      if (last) last.focus();
+    });
+
+    on(document.getElementById("setNow"), "click", function () {
+      var p = currentPad();
+      if (!p) return;
+      p.gaugedAt = localInputValue(new Date());
+      document.getElementById("gaugedAt").value = p.gaugedAt;
+      save();
+      renderResults();
+    });
+
+    function setupInput(e) {
+      var id = e.target.id;
+      var p = currentPad();
+      if (!p) return;
+      var map = { padName: "name", rate: "rate", lact: "lact", heightFt: "heightFt", bpi: "bpi", killFt: "killFt", alarmFt: "alarmFt" };
+      if (!map[id]) return;
+      var key = map[id];
+      if (key === "name") {
+        p.name = e.target.value || "Untitled pad";
+        renderChips();
+      } else {
+        var n = parseFloat(String(e.target.value).replace(/,/g, ""));
+        p[key] = isFinite(n) ? n : 0;
+        if (key === "alarmFt") p.alarmPlaceholder = false;
+        if (key === "killFt") p.killPlaceholder = false;
+      }
+      save();
+      renderResults();
+    }
+    on(document.getElementById("setupCard"), "input change blur", setupInput);
+
+    function bindPadField(id, key) {
+      on(document.getElementById(id), "input change blur", function (e) {
+        var p = currentPad();
+        if (!p) return;
+        p[key] = e.target.value;
+        save();
+        renderResults();
+      });
+    }
+    bindPadField("gaugedAt", "gaugedAt");
+    bindPadField("deadline", "deadline");
+    bindPadField("drawTo", "drawTo");
+
+    function tankInput(e) {
+      if (buildingTanks) return;
+      var tankEl = e.target.closest ? e.target.closest(".tank") : null;
+      if (!tankEl) return;
+      var i = +tankEl.getAttribute("data-idx");
+      var p = currentPad();
+      if (!p) return;
+      var t = p.tanks[i];
+      if (!t) return;
+      var k = e.target.getAttribute("data-k");
+      if (k === "name" || k === "level") {
+        t[k] = e.target.value;
+      } else if (k === "custom") {
+        if (e.target.checked) {
+          t.heightFt = p.heightFt;
+          t.bpi = p.bpi;
+          t.killFt = p.killFt;
+          t.alarmFt = p.alarmFt;
+        } else {
+          t.heightFt = t.bpi = t.killFt = t.alarmFt = null;
+        }
+        save();
+        renderTanks();
+        renderResults();
+        return;
+      } else if (k === "heightFt" || k === "bpi" || k === "killFt" || k === "alarmFt") {
+        var n = parseFloat(String(e.target.value).replace(/,/g, ""));
+        t[k] = isFinite(n) ? n : 0;
+      } else return;
+      save();
+      renderResults();
+    }
+    on(document.getElementById("tanks"), "input change blur", tankInput);
+
+    document.getElementById("tanks").addEventListener("click", function (e) {
+      var btn = e.target.closest ? e.target.closest("[data-del]") : null;
+      if (!btn) return;
+      var p = currentPad();
+      if (!p) return;
+      if (p.tanks.length < 2) {
+        alert("Keep at least one tank on the pad.");
+        return;
+      }
+      var i = +btn.getAttribute("data-del");
+      var name = p.tanks[i] && p.tanks[i].name ? p.tanks[i].name : "this tank";
+      if (!confirm("Delete tank " + name + "?")) return;
+      p.tanks.splice(i, 1);
+      save();
+      renderTanks();
+      renderResults();
+    });
+
+    on(document.getElementById("exportFile"), "click", exportFile);
+    on(document.getElementById("exportCopy"), "click", copyBackup);
+    on(document.getElementById("exportShare"), "click", shareBackup);
+    on(document.getElementById("importPaste"), "click", function () {
+      importFromText(document.getElementById("backupText").value);
+    });
+    on(document.getElementById("importFileBtn"), "click", function () {
+      document.getElementById("importFile").click();
+    });
+    on(document.getElementById("importFile"), "change", function (e) {
+      var f = e.target.files && e.target.files[0];
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () { importFromText(String(reader.result || "")); };
+      reader.onerror = function () { setBackupMsg("Could not read that file."); };
+      reader.readAsText(f);
+      e.target.value = "";
+    });
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) save();
+      else updateStorageBanner();
+    });
+    window.addEventListener("pagehide", function () { save(); });
+    window.addEventListener("beforeunload", function () { save(); });
+    window.addEventListener("pageshow", function () {
+      /* Re-read storage when coming back, in case another tab saved. */
+      if (storageWritable) {
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY);
+          if (raw && raw !== memoryStore) {
+            var data = JSON.parse(raw);
+            applyBackup(data, true);
+            memoryStore = raw;
+            renderAll();
+          }
+        } catch (e) {}
+      }
+      updateStorageBanner();
+    });
+
+    /* ---------------- PWA ---------------- */
+
+    function installManifest() {
+      try {
+        var start = location.href.split("#")[0];
+        var manifest = {
+          name: "Tank Calculator",
+          short_name: "Tank Calculator",
+          description: "Tank calculator: gauges, room, kill and alarm times.",
+          start_url: start,
+          display: "standalone",
+          background_color: "#102033",
+          theme_color: "#102033",
+          icons: [
+            { src: ICON192, sizes: "192x192", type: "image/png", purpose: "any" },
+            { src: ICON512, sizes: "512x512", type: "image/png", purpose: "any" }
+          ]
+        };
+        var blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+        var url = URL.createObjectURL(blob);
+        var link = document.querySelector('link[rel="manifest"]');
+        if (link) link.href = url;
+      } catch (e) {}
+    }
+
+    function registerSW() {
+      if (!("serviceWorker" in navigator)) return;
+      if (location.protocol !== "http:" && location.protocol !== "https:") return;
+      navigator.serviceWorker.register(SW_PATH, { scope: "/tank-calculator/" }).catch(function () {});
+    }
+
+    window.PadTrackerMath = { parseLevel: parseLevel, fmtIn: fmtIn, compute: compute, factoryPads: factoryPads, howLow: howLow, drawDown: drawDown };
+    window.TankCalculatorApp = {
+      storageKey: STORAGE_KEY,
+      getState: function () { return { padId: state.padId, padCount: state.pads.length, pads: state.pads, storageMode: storageMode, storageWritable: storageWritable, lastSavedAt: lastSavedAt }; },
+      addPad: addPad,
+      currentPad: currentPad,
+      save: save,
+      load: load,
+      payload: payload,
+      applyBackup: applyBackup,
+      probeStorage: probeStorage
+    };
+
+    function currentSiteLinks() {
+      var home = LIVE_HOME;
+      var share = LIVE_SHARE;
+      if ((location.protocol === "http:" || location.protocol === "https:") && location.host) {
+        var root = location.protocol + "//" + location.host + "/tank-calculator/";
+        if (!home) home = root;
+        if (!share) share = root;
+      }
+      return { home: home, share: share };
+    }
+
+    function fillInstallLinks() {
+      var links = currentSiteLinks();
+      var el = document.getElementById("liveLinks");
+      if (!el) return;
+      if (!links.home && !links.share) {
+        el.innerHTML = "";
+        return;
+      }
+      var html = "";
+      var url = links.home || links.share;
+      if (url) html = '<b>Web link:</b> <a href="' + url + '">' + url + "</a>";
+      el.innerHTML = html;
+    }
+
+    /* Use the real site address in the storage warning when we have one. */
+    var _updateStorageBanner = updateStorageBanner;
+    updateStorageBanner = function () {
+      var links = currentSiteLinks();
+      if (links.home && !LIVE_HOME) LIVE_HOME = links.home;
+      if (links.share && !LIVE_SHARE) LIVE_SHARE = links.share;
+      _updateStorageBanner();
+    };
+
+    load();
+    fillInstallLinks();
+    installManifest();
+    registerSW();
+    renderAll();
+    refreshBackupBox();
+  })();
+  </script>
+</body>
+</html>
